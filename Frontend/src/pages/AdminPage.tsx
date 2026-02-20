@@ -1,0 +1,244 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import { classesAPI, packagesAPI, authAPI } from '../api/client';
+import { FitnessClass, Package, User } from '../types';
+
+export default function AdminPage() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
+    const [classes, setClasses] = useState<FitnessClass[]>([]);
+    const [packages, setPackages] = useState<Package[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+
+    // Class form
+    const [className, setClassName] = useState('');
+    const [capacity, setCapacity] = useState('');
+    const [schedule, setSchedule] = useState('');
+    const [description, setDescription] = useState('');
+
+    // Package form
+    const [packageName, setPackageName] = useState('');
+    const [price, setPrice] = useState('');
+    const [duration, setDuration] = useState('');
+    const [packageDesc, setPackageDesc] = useState('');
+
+    useEffect(() => {
+        if (!user || user.role !== 'ADMIN') {
+            navigate('/');
+            return;
+        }
+        fetchData();
+    }, [user, navigate]);
+
+    const fetchData = async () => {
+        try {
+            const [classesRes, packagesRes, usersRes] = await Promise.all([
+                classesAPI.getAll(),
+                packagesAPI.getAllAdmin(),
+                authAPI.getAllUsers(),
+            ]);
+            setClasses(classesRes.data);
+            setPackages(packagesRes.data);
+            setUsers(usersRes.data);
+        } catch (error) {
+            console.error('Error fetching admin data:', error);
+            toast.error('Failed to load admin data');
+        }
+    };
+
+    const handleCreateClass = async () => {
+        try {
+            await classesAPI.create({
+                name: className,
+                capacity: parseInt(capacity),
+                schedule,
+                description,
+            });
+            toast.success('Class created!');
+            setClassName('');
+            setCapacity('');
+            setSchedule('');
+            setDescription('');
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Failed to create class');
+        }
+    };
+
+    const handleToggleClass = async (id: number) => {
+        try {
+            await classesAPI.toggle(id);
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to toggle class');
+        }
+    };
+
+    const handleDeleteClass = async (id: number) => {
+        if (!window.confirm('Delete this class?')) return;
+        try {
+            await classesAPI.delete(id);
+            toast.success('Class deleted');
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to delete class');
+        }
+    };
+
+    const handleCreatePackage = async () => {
+        try {
+            await packagesAPI.create({
+                name: packageName,
+                price: parseFloat(price),
+                durationDays: parseInt(duration),
+                description: packageDesc,
+            });
+            toast.success('Package created!');
+            setPackageName('');
+            setPrice('');
+            setDuration('');
+            setPackageDesc('');
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Failed to create package');
+        }
+    };
+
+    const handleDeletePackage = async (id: number) => {
+        if (!window.confirm('Delete this package?')) return;
+        try {
+            await packagesAPI.delete(id);
+            toast.success('Package deleted');
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to delete package');
+        }
+    };
+
+    return (
+        <div style={{ padding: 30 }}>
+            <h1>Admin Panel</h1>
+
+            <hr />
+
+            <h2>Create Class</h2>
+            <input
+                placeholder="Class Name"
+                value={className}
+                onChange={(e) => setClassName(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="Capacity"
+                type="number"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="Schedule (YYYY-MM-DDTHH:MM)"
+                type="datetime-local"
+                value={schedule}
+                onChange={(e) => setSchedule(e.target.value)}
+            />
+            <br />
+            <textarea
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+            />
+            <br />
+            <button onClick={handleCreateClass}>Create Class</button>
+
+            <hr />
+
+            <h2>Manage Classes</h2>
+            {classes.map((cls) => (
+                <div key={cls.id} style={{ marginBottom: 15, border: '1px solid #ccc', padding: 10 }}>
+                    <h3>{cls.name}</h3>
+                    <p>Schedule: {new Date(cls.schedule).toLocaleString()}</p>
+                    <p>Capacity: {cls.capacity}</p>
+                    <p>Status: {cls.isActive ? 'Active' : 'Inactive'}</p>
+                    <button onClick={() => handleToggleClass(cls.id)}>
+                        {cls.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button onClick={() => handleDeleteClass(cls.id)} style={{ marginLeft: 10 }}>
+                        Delete
+                    </button>
+                </div>
+            ))}
+
+            <hr />
+
+            <h2>Create Package</h2>
+            <input
+                placeholder="Package Name"
+                value={packageName}
+                onChange={(e) => setPackageName(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="Price"
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="Duration (days)"
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+            />
+            <br />
+            <textarea
+                placeholder="Description"
+                value={packageDesc}
+                onChange={(e) => setPackageDesc(e.target.value)}
+            />
+            <br />
+            <button onClick={handleCreatePackage}>Create Package</button>
+
+            <hr />
+
+            <h2>Manage Packages</h2>
+            {packages.map((pkg) => (
+                <div key={pkg.id} style={{ marginBottom: 15, border: '1px solid #ccc', padding: 10 }}>
+                    <h3>{pkg.name}</h3>
+                    <p>Price: {pkg.price}</p>
+                    <p>Duration: {pkg.durationDays} days</p>
+                    <p>Active: {pkg.isActive ? 'Yes' : 'No'}</p>
+                    <button onClick={() => handleDeletePackage(pkg.id)}>Delete</button>
+                </div>
+            ))}
+            <hr />
+
+            <h2>Manage Users</h2>
+            <table border={1} style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                    <tr style={{ backgroundColor: '#eee' }}>
+                        <th style={{ padding: 8 }}>ID</th>
+                        <th style={{ padding: 8 }}>Name</th>
+                        <th style={{ padding: 8 }}>Email</th>
+                        <th style={{ padding: 8 }}>Role</th>
+                        <th style={{ padding: 8 }}>Joined at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {users.map((u) => (
+                        <tr key={u.id}>
+                            <td style={{ padding: 8 }}>{u.id}</td>
+                            <td style={{ padding: 8 }}>{u.name}</td>
+                            <td style={{ padding: 8 }}>{u.email}</td>
+                            <td style={{ padding: 8 }}>{u.role}</td>
+                            <td style={{ padding: 8 }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}

@@ -1,0 +1,32 @@
+{
+    "name": "fitness-backend",
+    "version": "1.0.0",
+    "description": "Fitness Booking System - Backend API",
+    "main": "server.js",
+    "scripts": {
+        "start": "tsx server.tsx",
+        "dev": "tsx watch server.tsx"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.10.2",
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.1",
+        "express": "^4.18.2",
+        "express-session": "^1.18.0",
+        "jsonwebtoken": "^9.0.2",
+        "prisma": "^5.10.2"
+    },
+    "devDependencies": {
+        "@types/bcryptjs": "^2.4.6",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/express-session": "^1.18.2",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^25.3.0",
+        "nodemon": "^3.0.3",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
+    }
+}
