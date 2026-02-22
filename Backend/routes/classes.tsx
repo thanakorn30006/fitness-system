@@ -1,18 +1,31 @@
+// ============================================================
+// routes/classes.tsx — Fitness Class Endpoints
+//
+// GET    /api/classes            — ดู class ทั้งหมด (public)
+// POST   /api/classes            — สร้าง class [Admin only]
+// PUT    /api/classes/:id/toggle — เปิด/ปิดการจอง [Admin only]
+// DELETE /api/classes/:id        — ลบ class [Admin only]
+//
+// ทุก class จะ include: trainer และ _count.bookings มาด้วยเสมอ
+// ============================================================
+
 import express from 'express';
 const router = express.Router();
 import { prisma } from '../lib/prisma';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
-// GET /api/classes - List all classes
+// ======= GET /api/classes =======
+// ดึง classes ทั้งหมด พร้อม trainer และจำนวนคนจอง (เรียงตามเวลา)
 router.get('/', async (req, res) => {
     try {
         const classes = await prisma.class.findMany({
             include: {
+                trainer: true,          // ดึงข้อมูล trainer มาด้วย
                 _count: {
-                    select: { bookings: true }
+                    select: { bookings: true } // นับจำนวนคนจอง
                 }
             },
-            orderBy: { schedule: 'asc' }
+            orderBy: { schedule: 'asc' } // เรียงจากเร็วสุด → ช้าสุด
         });
 
         return res.json(classes);
@@ -22,10 +35,14 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST /api/classes - Create a new class (Admin only)
+// ======= POST /api/classes [Admin only] =======
+// สร้าง class ใหม่
+// - trainerId เป็น optional (ไม่ต้องมี trainer ก็ได้)
+// - schedule ต้องเป็นอนาคต
+// - capacity ต้องมากกว่า 0
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const { name, capacity, schedule, description } = req.body;
+        const { name, capacity, schedule, description, trainerId } = req.body;
 
         if (!name || !capacity || !schedule) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -52,7 +69,8 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
                 capacity: capacityNumber,
                 schedule: scheduleDate,
                 description: description || null,
-                isActive: true
+                isActive: true, // class ใหม่เปิดรับจองอัตโนมัติ
+                trainerId: trainerId ? Number(trainerId) : null
             }
         });
 
@@ -63,10 +81,11 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
-// PUT /api/classes/:id/toggle - Toggle class active status (Admin only)
+// ======= PUT /api/classes/:id/toggle [Admin only] =======
+// สลับสถานะ isActive ของ class (เปิด ↔ ปิด)
 router.put('/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const classId = parseInt(req.params.id);
+        const classId = parseInt(req.params.id as string);
 
         const fitnessClass = await prisma.class.findUnique({
             where: { id: classId }
@@ -76,6 +95,7 @@ router.put('/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Class not found' });
         }
 
+        // สลับ isActive
         const updated = await prisma.class.update({
             where: { id: classId },
             data: { isActive: !fitnessClass.isActive }
@@ -88,10 +108,11 @@ router.put('/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
-// DELETE /api/classes/:id - Delete a class (Admin only)
+// ======= DELETE /api/classes/:id [Admin only] =======
+// ลบ class — bookings ที่เกี่ยวข้องจะถูกลบตามด้วย (cascade ใน Prisma schema)
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const classId = parseInt(req.params.id);
+        const classId = parseInt(req.params.id as string);
 
         await prisma.class.delete({
             where: { id: classId }

@@ -20,6 +20,7 @@ export default function Navbar() {
             <div style={{ display: 'flex', gap: '20px' }}>
                 <Link to="/">Home</Link>
                 <Link to="/classes">Classes</Link>
+                <Link to="/trainers">Trainers</Link>
                 <Link to="/packages">Packages</Link>
                 <Link to="/contact">Contact</Link>
 
@@ -31,7 +32,7 @@ export default function Navbar() {
 
                 {role === 'ADMIN' && (
                     <>
-                        <Link to="/admin">Admin Panel</Link>
+                        <Link to="/admin">Admin</Link>
                     </>
                 )}
             </div>

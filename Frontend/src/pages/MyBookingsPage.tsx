@@ -1,3 +1,12 @@
+// ============================================================
+// MyBookingsPage.tsx — หน้าแสดงการจองของ User ที่ login อยู่
+//
+// โครงสร้าง:
+//   - ถ้ายังไม่ login → redirect ไปหน้า /login อัตโนมัติ
+//   - แสดง list การจองทั้งหมด (เรียงล่าสุดก่อน — backend จัดให้)
+//   - แต่ละรายการมีปุ่ม Cancel Booking
+// ============================================================
+
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { bookingsAPI } from '../api/client';
@@ -11,6 +20,7 @@ export default function MyBookingsPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Guard — ถ้ายังไม่ login ให้ redirect ไป login ทันที
     useEffect(() => {
         if (!user) {
             navigate('/login');
@@ -31,6 +41,7 @@ export default function MyBookingsPage() {
         }
     };
 
+    // ยกเลิกการจอง — ขอยืนยันก่อนเสมอ
     const handleCancel = async (bookingId: number) => {
         if (!window.confirm('Are you sure you want to cancel this booking?')) {
             return;
@@ -39,7 +50,7 @@ export default function MyBookingsPage() {
         try {
             await bookingsAPI.cancelBooking(bookingId);
             toast.success('Booking cancelled');
-            fetchBookings(); // Refresh
+            fetchBookings(); // Refresh list
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Cancellation failed');
         }
@@ -51,8 +62,10 @@ export default function MyBookingsPage() {
         <div style={{ padding: '30px' }}>
             <h1>My Bookings</h1>
 
+            {/* ถ้าไม่มีการจองเลย */}
             {bookings.length === 0 && <p>No bookings yet.</p>}
 
+            {/* แสดง card ต่อการจอง 1 รายการ */}
             {bookings.map((booking) => (
                 <div
                     key={booking.id}

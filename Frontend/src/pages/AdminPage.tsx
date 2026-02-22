@@ -1,30 +1,53 @@
+// ============================================================
+// AdminPage.tsx — หน้าจัดการระบบ (เฉพาะ ADMIN เท่านั้น)
+//
+// ส่วนประกอบ:
+//   1. Create Class      — สร้างคลาสใหม่ + เลือก Trainer
+//   2. Manage Trainers   — เพิ่ม/ลบ Trainer
+//   3. Manage Classes    — toggle active / ลบ Class ที่มีอยู่
+//   4. Create Package    — สร้าง Membership Package
+//   5. Manage Packages   — ดู/ลบ Package ที่มีอยู่
+//   6. Manage Users      — ดูรายชื่อ User ทั้งหมด (read only)
+//
+// ห้ามแก้: useEffect ที่เช็ค role → redirect ถ้าไม่ใช่ ADMIN
+// ============================================================
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { classesAPI, packagesAPI, authAPI } from '../api/client';
-import { FitnessClass, Package, User } from '../types';
+import { classesAPI, packagesAPI, authAPI, trainersAPI } from '../api/client';
+import { FitnessClass, Package, User, Trainer } from '../types';
 
 export default function AdminPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
+    // ======= State: ข้อมูลจาก API =======
     const [classes, setClasses] = useState<FitnessClass[]>([]);
     const [packages, setPackages] = useState<Package[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [trainers, setTrainers] = useState<Trainer[]>([]);
 
-    // Class form
+    // ======= State: ฟอร์มสร้าง Class =======
     const [className, setClassName] = useState('');
     const [capacity, setCapacity] = useState('');
     const [schedule, setSchedule] = useState('');
     const [description, setDescription] = useState('');
+    const [selectedTrainerId, setSelectedTrainerId] = useState('');
 
-    // Package form
+    // ======= State: ฟอร์มสร้าง Trainer =======
+    const [trainerName, setTrainerName] = useState('');
+    const [specialty, setSpecialty] = useState('');
+    const [bio, setBio] = useState('');
+
+    // ======= State: ฟอร์มสร้าง Package =======
     const [packageName, setPackageName] = useState('');
     const [price, setPrice] = useState('');
     const [duration, setDuration] = useState('');
     const [packageDesc, setPackageDesc] = useState('');
 
+    // ห้ามแก้: Guard สำหรับ Admin-only — redirect ถ้าไม่ใช่ ADMIN
     useEffect(() => {
         if (!user || user.role !== 'ADMIN') {
             navigate('/');
@@ -33,22 +56,28 @@ export default function AdminPage() {
         fetchData();
     }, [user, navigate]);
 
+    // โหลดข้อมูลทุกอย่างพร้อมกัน
     const fetchData = async () => {
         try {
-            const [classesRes, packagesRes, usersRes] = await Promise.all([
+            const [classesRes, packagesRes, usersRes, trainersRes] = await Promise.all([
                 classesAPI.getAll(),
                 packagesAPI.getAllAdmin(),
                 authAPI.getAllUsers(),
+                trainersAPI.getAll(),
             ]);
             setClasses(classesRes.data);
             setPackages(packagesRes.data);
             setUsers(usersRes.data);
+            setTrainers(trainersRes.data);
         } catch (error) {
             console.error('Error fetching admin data:', error);
             toast.error('Failed to load admin data');
         }
     };
 
+    // ======= Handlers: Class =======
+
+    // สร้างคลาสใหม่ — trainerId เป็น optional
     const handleCreateClass = async () => {
         try {
             await classesAPI.create({
@@ -56,18 +85,22 @@ export default function AdminPage() {
                 capacity: parseInt(capacity),
                 schedule,
                 description,
+                trainerId: selectedTrainerId ? parseInt(selectedTrainerId) : undefined
             });
             toast.success('Class created!');
+            // รีเซ็ตฟอร์ม
             setClassName('');
             setCapacity('');
             setSchedule('');
             setDescription('');
+            setSelectedTrainerId('');
             fetchData();
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Failed to create class');
         }
     };
 
+    // toggle isActive ของ class (เปิด/ปิดการจอง)
     const handleToggleClass = async (id: number) => {
         try {
             await classesAPI.toggle(id);
@@ -77,6 +110,7 @@ export default function AdminPage() {
         }
     };
 
+    // ลบ class พร้อมยืนยันก่อน
     const handleDeleteClass = async (id: number) => {
         if (!window.confirm('Delete this class?')) return;
         try {
@@ -88,15 +122,18 @@ export default function AdminPage() {
         }
     };
 
+    // ======= Handlers: Package =======
+
     const handleCreatePackage = async () => {
         try {
             await packagesAPI.create({
                 name: packageName,
                 price: parseFloat(price),
-                durationDays: parseInt(duration),
+                duration: parseInt(duration),  // ส่ง "duration" ตรงกับ backend (ไม่ใช่ durationDays)
                 description: packageDesc,
             });
             toast.success('Package created!');
+            // รีเซ็ตฟอร์ม
             setPackageName('');
             setPrice('');
             setDuration('');
@@ -118,12 +155,39 @@ export default function AdminPage() {
         }
     };
 
+    // ======= Handlers: Trainer =======
+
+    const handleCreateTrainer = async () => {
+        try {
+            await trainersAPI.create({ name: trainerName, specialty, bio });
+            toast.success('Trainer added!');
+            setTrainerName('');
+            setSpecialty('');
+            setBio('');
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Failed to add trainer');
+        }
+    };
+
+    const handleDeleteTrainer = async (id: number) => {
+        if (!window.confirm('Delete this trainer?')) return;
+        try {
+            await trainersAPI.delete(id);
+            toast.success('Trainer deleted');
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to delete trainer');
+        }
+    };
+
     return (
         <div style={{ padding: 30 }}>
             <h1>Admin Panel</h1>
 
             <hr />
 
+            {/* ======= 1. Create Class ======= */}
             <h2>Create Class</h2>
             <input
                 placeholder="Class Name"
@@ -151,17 +215,70 @@ export default function AdminPage() {
                 onChange={(e) => setDescription(e.target.value)}
             />
             <br />
-            <button onClick={handleCreateClass}>Create Class</button>
+            {/* Dropdown เลือก Trainer — populate จาก state trainers */}
+            <select
+                value={selectedTrainerId}
+                onChange={(e) => setSelectedTrainerId(e.target.value)}
+            >
+                <option value="">Select Trainer (Optional)</option>
+                {trainers.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.specialty})</option>
+                ))}
+            </select>
+            <br />
+            <button onClick={handleCreateClass} style={{ marginTop: 10 }}>Create Class</button>
 
             <hr />
 
+            {/* ======= 2. Manage Trainers ======= */}
+            <h2>Manage Trainers</h2>
+            <input
+                placeholder="Trainer Name"
+                value={trainerName}
+                onChange={(e) => setTrainerName(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="Specialty"
+                value={specialty}
+                onChange={(e) => setSpecialty(e.target.value)}
+            />
+            <br />
+            <textarea
+                placeholder="Bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+            />
+            <br />
+            <button onClick={handleCreateTrainer}>Add Trainer</button>
+
+            {/* List trainer ที่มีอยู่ทั้งหมด */}
+            <div style={{ marginTop: 20 }}>
+                {trainers.map(t => (
+                    <div key={t.id} style={{ border: '1px solid #ddd', padding: 10, marginBottom: 10 }}>
+                        <strong>{t.name}</strong> - {t.specialty}
+                        <button
+                            onClick={() => handleDeleteTrainer(t.id)}
+                            style={{ marginLeft: 10, color: 'red' }}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            <hr />
+
+            {/* ======= 3. Manage Classes ======= */}
             <h2>Manage Classes</h2>
             {classes.map((cls) => (
                 <div key={cls.id} style={{ marginBottom: 15, border: '1px solid #ccc', padding: 10 }}>
                     <h3>{cls.name}</h3>
+                    <p>Trainer: {cls.trainer?.name || 'Unassigned'}</p>
                     <p>Schedule: {new Date(cls.schedule).toLocaleString()}</p>
                     <p>Capacity: {cls.capacity}</p>
                     <p>Status: {cls.isActive ? 'Active' : 'Inactive'}</p>
+                    {/* Toggle เปิด/ปิดการจอง */}
                     <button onClick={() => handleToggleClass(cls.id)}>
                         {cls.isActive ? 'Deactivate' : 'Activate'}
                     </button>
@@ -173,6 +290,7 @@ export default function AdminPage() {
 
             <hr />
 
+            {/* ======= 4. Create Package ======= */}
             <h2>Create Package</h2>
             <input
                 placeholder="Package Name"
@@ -204,6 +322,7 @@ export default function AdminPage() {
 
             <hr />
 
+            {/* ======= 5. Manage Packages ======= */}
             <h2>Manage Packages</h2>
             {packages.map((pkg) => (
                 <div key={pkg.id} style={{ marginBottom: 15, border: '1px solid #ccc', padding: 10 }}>
@@ -216,6 +335,7 @@ export default function AdminPage() {
             ))}
             <hr />
 
+            {/* ======= 6. Manage Users (Read Only) ======= */}
             <h2>Manage Users</h2>
             <table border={1} style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>

@@ -1,3 +1,11 @@
+// ============================================================
+// LoginPage.tsx — หน้า Login
+//
+// flow: กรอก email + password → เรียก login() จาก AuthContext
+//       → ถ้าสำเร็จ redirect ไปหน้า /
+// ถ้าอยากเพิ่ม Remember Me หรือ Social Login → เพิ่มได้ที่นี่
+// ============================================================
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -7,15 +15,17 @@ export default function LoginPage() {
     const navigate = useNavigate();
     const { login } = useAuth();
 
+    // State สำหรับ form inputs
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    // เรียก login จาก AuthContext แล้วรอผลลัพธ์
     const handleLogin = async () => {
         const result = await login(email, password);
 
         if (result.success) {
             toast.success('Login successful');
-            navigate('/');
+            navigate('/'); // redirect ไปหน้า home
         } else {
             toast.error(result.error || 'Login failed');
         }

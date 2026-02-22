@@ -13,7 +13,7 @@ export default function ContactPage() {
 
                 <div>
                     <h3 style={{ textTransform: 'uppercase', fontSize: '14px', marginBottom: '10px' }}>Email</h3>
-                    <p style={{ fontSize: '18px' }}>📧 contact@antigravityfitness.com</p>
+                    <p style={{ fontSize: '18px' }}>📧 contact@fitness.com</p>
                 </div>
             </div>
         </div>
