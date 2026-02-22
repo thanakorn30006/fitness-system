@@ -1,11 +1,3 @@
-// ============================================================
-// RegisterPage.tsx — หน้าสมัครสมาชิก
-//
-// fields: ชื่อ, นามสกุล, เบอร์โทร, Email, Password
-// - lastName และ phone เป็น optional (ไม่กรอกก็ได้)
-// - หลังสมัครสำเร็จ → redirect ไปหน้า /login
-// ============================================================
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -15,14 +7,12 @@ export default function RegisterPage() {
     const navigate = useNavigate();
     const { register } = useAuth();
 
-    // State สำหรับ form inputs
     const [name, setName] = useState('');
     const [lastName, setLastName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    // ส่งข้อมูลไปยัง AuthContext → API
     const handleRegister = async () => {
         const result = await register(name, lastName, phone, email, password);
 
@@ -38,7 +28,6 @@ export default function RegisterPage() {
         <div style={{ maxWidth: '400px', margin: '40px auto', textAlign: 'center' }}>
             <h1>Register</h1>
 
-            {/* ชื่อ (required) */}
             <input
                 type="text"
                 placeholder="ชื่อ (First Name) *"
@@ -49,7 +38,6 @@ export default function RegisterPage() {
             <br />
             <br />
 
-            {/* นามสกุล (optional) */}
             <input
                 type="text"
                 placeholder="นามสกุล (Last Name)"
@@ -60,7 +48,6 @@ export default function RegisterPage() {
             <br />
             <br />
 
-            {/* เบอร์โทร (optional) */}
             <input
                 type="tel"
                 placeholder="เบอร์โทร (Phone)"
@@ -71,7 +58,6 @@ export default function RegisterPage() {
             <br />
             <br />
 
-            {/* Email (required) */}
             <input
                 type="email"
                 placeholder="Email *"
@@ -82,7 +68,6 @@ export default function RegisterPage() {
             <br />
             <br />
 
-            {/* Password (required) */}
             <input
                 type="password"
                 placeholder="Password *"

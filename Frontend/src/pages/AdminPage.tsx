@@ -1,17 +1,3 @@
-// ============================================================
-// AdminPage.tsx — หน้าจัดการระบบ (เฉพาะ ADMIN เท่านั้น)
-//
-// ส่วนประกอบ:
-//   1. Create Class      — สร้างคลาสใหม่ + เลือก Trainer
-//   2. Manage Trainers   — เพิ่ม/ลบ Trainer
-//   3. Manage Classes    — toggle active / ลบ Class ที่มีอยู่
-//   4. Create Package    — สร้าง Membership Package
-//   5. Manage Packages   — ดู/ลบ Package ที่มีอยู่
-//   6. Manage Users      — ดูรายชื่อ User ทั้งหมด (read only)
-//
-// ห้ามแก้: useEffect ที่เช็ค role → redirect ถ้าไม่ใช่ ADMIN
-// ============================================================
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -23,31 +9,26 @@ export default function AdminPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    // ======= State: ข้อมูลจาก API =======
     const [classes, setClasses] = useState<FitnessClass[]>([]);
     const [packages, setPackages] = useState<Package[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [trainers, setTrainers] = useState<Trainer[]>([]);
 
-    // ======= State: ฟอร์มสร้าง Class =======
     const [className, setClassName] = useState('');
     const [capacity, setCapacity] = useState('');
     const [schedule, setSchedule] = useState('');
     const [description, setDescription] = useState('');
     const [selectedTrainerId, setSelectedTrainerId] = useState('');
 
-    // ======= State: ฟอร์มสร้าง Trainer =======
     const [trainerName, setTrainerName] = useState('');
     const [specialty, setSpecialty] = useState('');
     const [bio, setBio] = useState('');
 
-    // ======= State: ฟอร์มสร้าง Package =======
     const [packageName, setPackageName] = useState('');
     const [price, setPrice] = useState('');
     const [duration, setDuration] = useState('');
     const [packageDesc, setPackageDesc] = useState('');
 
-    // ห้ามแก้: Guard สำหรับ Admin-only — redirect ถ้าไม่ใช่ ADMIN
     useEffect(() => {
         if (!user || user.role !== 'ADMIN') {
             navigate('/');
@@ -56,7 +37,6 @@ export default function AdminPage() {
         fetchData();
     }, [user, navigate]);
 
-    // โหลดข้อมูลทุกอย่างพร้อมกัน
     const fetchData = async () => {
         try {
             const [classesRes, packagesRes, usersRes, trainersRes] = await Promise.all([
@@ -75,9 +55,6 @@ export default function AdminPage() {
         }
     };
 
-    // ======= Handlers: Class =======
-
-    // สร้างคลาสใหม่ — trainerId เป็น optional
     const handleCreateClass = async () => {
         try {
             await classesAPI.create({
@@ -88,7 +65,6 @@ export default function AdminPage() {
                 trainerId: selectedTrainerId ? parseInt(selectedTrainerId) : undefined
             });
             toast.success('Class created!');
-            // รีเซ็ตฟอร์ม
             setClassName('');
             setCapacity('');
             setSchedule('');
@@ -100,7 +76,6 @@ export default function AdminPage() {
         }
     };
 
-    // toggle isActive ของ class (เปิด/ปิดการจอง)
     const handleToggleClass = async (id: number) => {
         try {
             await classesAPI.toggle(id);
@@ -110,7 +85,6 @@ export default function AdminPage() {
         }
     };
 
-    // ลบ class พร้อมยืนยันก่อน
     const handleDeleteClass = async (id: number) => {
         if (!window.confirm('Delete this class?')) return;
         try {
@@ -122,18 +96,15 @@ export default function AdminPage() {
         }
     };
 
-    // ======= Handlers: Package =======
-
     const handleCreatePackage = async () => {
         try {
             await packagesAPI.create({
                 name: packageName,
                 price: parseFloat(price),
-                duration: parseInt(duration),  // ส่ง "duration" ตรงกับ backend (ไม่ใช่ durationDays)
+                duration: parseInt(duration),
                 description: packageDesc,
             });
             toast.success('Package created!');
-            // รีเซ็ตฟอร์ม
             setPackageName('');
             setPrice('');
             setDuration('');
@@ -154,8 +125,6 @@ export default function AdminPage() {
             toast.error('Failed to delete package');
         }
     };
-
-    // ======= Handlers: Trainer =======
 
     const handleCreateTrainer = async () => {
         try {

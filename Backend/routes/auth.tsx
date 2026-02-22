@@ -1,25 +1,10 @@
-// ============================================================
-// routes/auth.tsx — Auth Endpoints
-//
-// POST   /api/auth/register     — สมัครสมาชิก
-// POST   /api/auth/login        — เข้าสู่ระบบ → ได้รับ JWT token
-// GET    /api/auth/session      — เช็ค token ว่ายังใช้ได้อยู่
-// GET    /api/auth/users        — ดู users ทั้งหมด [Admin only]
-// PUT    /api/auth/profile      — แก้ชื่อ/รหัสผ่าน [ต้อง login]
-//
-// ห้ามแก้: การสร้าง JWT token ใน /login
-//   เพราะ frontend อ่าน { token, user } จาก response โดยตรง
-// ============================================================
-
 import express from 'express';
 const router = express.Router();
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
-// ======= POST /api/auth/register =======
-// สมัครสมาชิกด้วย name, email, password
-// role เริ่มต้นเป็น 'MEMBER' เสมอ (ไม่ให้ user กำหนด role เอง)
+// Register user
 router.post('/register', async (req, res) => {
     try {
         const { name, lastName, phone, email, password } = req.body;
@@ -42,8 +27,8 @@ router.post('/register', async (req, res) => {
                 lastName: lastName || null,
                 phone: phone || null,
                 email,
-                password, // TODO: ควร hash ด้วย bcrypt ก่อนเก็บ
-                role: 'MEMBER' // ห้ามแก้ให้ user ส่ง role เอง
+                password,
+                role: 'MEMBER'
             }
         });
 
@@ -54,9 +39,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// ======= POST /api/auth/login =======
-// login แล้วได้รับ JWT token (อายุ 7 วัน)
-// ห้ามแก้ structure ของ response เพราะ AuthContext อ่าน { token, user } ตรงๆ
+// Login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -73,12 +56,10 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // TODO: ถ้าเพิ่ม bcrypt → เปลี่ยนเป็น bcrypt.compare(password, user.password)
         if (user.password !== password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // สร้าง JWT token — payload: { id, email, role }
         const token = jwt.sign(
             {
                 id: user.id.toString(),
@@ -89,7 +70,6 @@ router.post('/login', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // ห้ามแก้ structure นี้ — frontend อ่าน { token, user }
         return res.json({
             token,
             user: {
@@ -105,8 +85,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// ======= GET /api/auth/session =======
-// เช็คว่า token ยังใช้ได้ → คืน user ปัจจุบัน
+// Get session
 router.get('/session', async (req, res) => {
     try {
         const authHeader = req.headers['authorization'];
@@ -144,8 +123,7 @@ router.get('/session', async (req, res) => {
     }
 });
 
-// ======= GET /api/auth/users [Admin only] =======
-// ดู users ทั้งหมด — เฉพาะ ADMIN เท่านั้น
+// Admin get users
 router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const users = await prisma.user.findMany({
@@ -165,8 +143,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
-// ======= PUT /api/auth/profile [ต้อง login] =======
-// แก้ชื่อหรือรหัสผ่านของ user ที่ login อยู่
+// Update profile
 router.put('/profile', authenticateToken, async (req: any, res) => {
     try {
         const userId = parseInt(req.user.id);
@@ -174,7 +151,7 @@ router.put('/profile', authenticateToken, async (req: any, res) => {
 
         const data: any = {};
         if (name) data.name = name;
-        if (password) data.password = password; // TODO: ควร hash ก่อนเก็บ
+        if (password) data.password = password;
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },

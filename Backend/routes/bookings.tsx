@@ -1,27 +1,10 @@
-// ============================================================
-// routes/bookings.tsx — Booking Endpoints
-//
-// POST   /api/bookings           — จองคลาส [ต้อง login + มี active package]
-// GET    /api/bookings           — ดูการจองของ user ที่ login อยู่
-// DELETE /api/bookings/:id       — ยกเลิกการจอง [เฉพาะเจ้าของ booking]
-//
-// ห้ามแก้: Transaction ใน POST — ใช้เพื่อป้องกัน race condition
-//   (กรณีคนจองพร้อมกันเกิน capacity)
-// ============================================================
-
 import express from 'express';
 import { Prisma } from '@prisma/client';
 const router = express.Router();
 import { prisma } from '../lib/prisma';
 import { authenticateToken } from '../middleware/auth';
 
-// ======= POST /api/bookings =======
-// จองคลาส — เงื่อนไข:
-//   1. ต้องมี active package (ยังไม่หมดอายุ)
-//   2. คลาสต้องยังเปิดอยู่ (isActive = true)
-//   3. คลาสต้องยังไม่ผ่านวันกำหนด
-//   4. ที่นั่งต้องไม่เต็ม
-//   5. ยังไม่เคยจองคลาสนี้ไปแล้ว
+// Create booking
 router.post('/', authenticateToken, async (req: any, res) => {
     try {
         const { classId } = req.body;
@@ -34,7 +17,7 @@ router.post('/', authenticateToken, async (req: any, res) => {
 
         const today = new Date();
 
-        // เช็คว่ามี active package อยู่
+        // Check active package
         const activePackage = await prisma.memberPackage.findFirst({
             where: {
                 userId,
@@ -49,7 +32,7 @@ router.post('/', authenticateToken, async (req: any, res) => {
             });
         }
 
-        // ห้ามแก้: Transaction — ป้องกัน race condition ตอนจองพร้อมกัน
+        // Use transaction to prevent double booking
         await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const fitnessClass = await tx.class.findUnique({
                 where: { id: parsedClassId },
@@ -70,7 +53,6 @@ router.post('/', authenticateToken, async (req: any, res) => {
                 throw new Error('Class is full');
             }
 
-            // เช็คว่าเคยจองคลาสนี้แล้วหรือยัง (unique constraint: userId + classId)
             const existing = await tx.booking.findUnique({
                 where: {
                     userId_classId: {
@@ -102,8 +84,7 @@ router.post('/', authenticateToken, async (req: any, res) => {
     }
 });
 
-// ======= GET /api/bookings =======
-// ดูการจองทั้งหมดของ user ที่ login อยู่ (เรียงล่าสุดก่อน)
+// Get my bookings
 router.get('/', authenticateToken, async (req: any, res) => {
     try {
         const userId = parseInt(req.user.id);
@@ -111,7 +92,7 @@ router.get('/', authenticateToken, async (req: any, res) => {
         const bookings = await prisma.booking.findMany({
             where: { userId },
             include: {
-                class: true // ดึงข้อมูล class มาด้วย
+                class: true
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -123,8 +104,7 @@ router.get('/', authenticateToken, async (req: any, res) => {
     }
 });
 
-// ======= DELETE /api/bookings/:id =======
-// ยกเลิกการจอง — เฉพาะเจ้าของ booking เท่านั้น
+// Cancel booking
 router.delete('/:id', authenticateToken, async (req: any, res) => {
     try {
         const userId = parseInt(req.user.id);
@@ -138,7 +118,6 @@ router.delete('/:id', authenticateToken, async (req: any, res) => {
             where: { id: bookingId }
         });
 
-        // เช็คว่าเป็น booking ของ user คนนี้จริงๆ
         if (!booking || booking.userId !== userId) {
             return res.status(403).json({ error: 'Not allowed' });
         }

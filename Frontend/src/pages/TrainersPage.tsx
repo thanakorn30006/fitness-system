@@ -1,12 +1,3 @@
-// ============================================================
-// TrainersPage.tsx — หน้าแสดงรายชื่อ Trainers ทั้งหมด
-//
-// โครงสร้าง:
-//   - โหลด trainers จาก API → แสดงในตาราง
-//   - ถ้าอยากแสดงเป็น card แทนตาราง → แก้ JSX ส่วน tbody
-//   - การเพิ่ม/ลบ trainer → ทำที่ AdminPage (/admin)
-// ============================================================
-
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { trainersAPI } from '../api/client';
@@ -16,7 +7,6 @@ export default function TrainersPage() {
     const [trainers, setTrainers] = useState<Trainer[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // โหลดข้อมูลตอน mount
     useEffect(() => {
         fetchTrainers();
     }, []);

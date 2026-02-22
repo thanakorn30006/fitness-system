@@ -1,8 +1,3 @@
-// ============================================================
-// PackagesPage.tsx — หน้าแสดงและสมัคร Membership Package
-// กด Subscribe Now → navigate ไปหน้า /payment/:packageId
-// ============================================================
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -34,7 +29,6 @@ export default function PackagesPage() {
         }
     };
 
-    // กด Subscribe Now → ไปหน้าชำระเงิน
     const handleSubscribe = (pkg: Package) => {
         if (!user) { toast.error('Please login to subscribe'); return; }
         if (activePackage) { toast.error('คุณยังมีแพ็กเกจที่ยังไม่หมดอายุ'); return; }
@@ -46,8 +40,6 @@ export default function PackagesPage() {
     return (
         <div style={{ padding: 30 }}>
             <h1>Membership Packages</h1>
-
-
 
             {packages.map((pkg) => (
                 <div key={pkg.id} style={{ marginBottom: 20, border: '1px solid #ddd', padding: 20, borderRadius: 8 }}>

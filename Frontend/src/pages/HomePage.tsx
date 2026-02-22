@@ -1,26 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { packagesAPI } from '../api/client';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function HomePage() {
-    const { user } = useAuth();
-
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '60vh'
-        }}>
-            <h1 style={{ fontSize: '3rem', marginBottom: '10px' }}>ยินดีต้อนรับ</h1>
-            {user ? (
-                <h2 style={{ color: '#555' }}>คุณ {user.name}</h2>
-            ) : (
-                <p style={{ color: '#888' }}>กรุณา Login เพื่อเข้าใช้งานระบบจองคลาส</p>
-            )}
-            <p style={{ marginTop: '20px', color: '#777' }}>ขอให้มีความสุขกับการออกกำลังกายนะครับ!</p>
+        <div style={{ textAlign: 'center', padding: '50px 20px' }}>
+            <h1>Fitness System</h1>
+            <p>Welcome to our fitness class booking system.</p>
+
+            <div style={{ marginTop: '30px', display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                <Link
+                    to="/classes"
+                    style={{
+                        padding: '10px 20px',
+                        backgroundColor: '#0070f3',
+                        color: 'white',
+                        textDecoration: 'none',
+                        borderRadius: '5px'
+                    }}
+                >
+                    View Classes
+                </Link>
+                <Link
+                    to="/packages"
+                    style={{
+                        padding: '10px 20px',
+                        border: '1px solid #0070f3',
+                        color: '#0070f3',
+                        textDecoration: 'none',
+                        borderRadius: '5px'
+                    }}
+                >
+                    View Packages
+                </Link>
+            </div>
         </div>
     );
 }
-
